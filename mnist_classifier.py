@@ -1,7 +1,7 @@
 # yanked directly from https://www.tensorflow.org/tutorials/quickstart/beginner
 import tensorflow as tf
+from time import time
 mnist = tf.keras.datasets.mnist
-
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = x_train / 255.0, x_test / 255.0
 model = tf.keras.models.Sequential([
@@ -11,8 +11,24 @@ model = tf.keras.models.Sequential([
   tf.keras.layers.Dense(10)
 ])
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-model.compile(optimizer='adam',
-              loss=loss_fn,
-              metrics=['accuracy'])
-model.fit(x_train, y_train, epochs=5)
-model.evaluate(x_test,  y_test, verbose=2)
+
+cpu_start,gpu_start,cpu_finish,gpu_finish = 0,0,0,0
+try:
+    with tf.device('/cpu:0'):
+        cpu_start = time()
+        model.compile(optimizer='adam',loss=loss_fn,metrics=['accuracy'])
+        model.fit(x_train, y_train, epochs=5)
+        model.evaluate(x_test,  y_test, verbose=2)
+        cpu_finish = time()
+except e:
+    print('cpu execution failed')
+try:
+    with tf.device('/gpu:0'):
+        gpu_start = time()
+        model.compile(optimizer='adam',loss=loss_fn,metrics=['accuracy'])
+        model.fit(x_train, y_train, epochs=5)
+        model.evaluate(x_test,  y_test, verbose=2)
+        gpu_finish = time()
+except e:
+    print('gpu execution failed')
+print(f'cpu time: {cpu_finish - cpu_start}\ngpu time: {gpu_finish - gpu_start}')
